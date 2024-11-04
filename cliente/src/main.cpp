@@ -12,11 +12,11 @@
 #define SSID "Frederico"
 #define PASSWORD "Mari#2606"
 
-#define MQTT_BROKER "18.231.155.48"
+#define MQTT_BROKER "vm0.pji3.sj.ifsc.edu.br"
 #define MQTT_PORT 1883
 #define MQTT_Topico_Temperatura "temperatura"
 #define MQTT_Topico_Umidade "umidade"
-
+#define MQTT_Topico_PJI3 "PJI3"
 SensorTempUmid sensor(4, DHT22);
 MQTT mqtt(MQTT_BROKER, MQTT_PORT);
 String mqttClientId;
@@ -30,9 +30,12 @@ void setup() {
     mqttClientId = gerarUUID();
     mqtt.setCallback(callback);
     if (mqtt.connect(mqttClientId)) {
-        mqtt.subscribe(MQTT_Topico_Temperatura);
-        mqtt.subscribe(MQTT_Topico_Umidade);
+        //mqtt.subscribe(MQTT_Topico_Temperatura);
+        //mqtt.subscribe(MQTT_Topico_Umidade);
+        mqtt.subscribe(MQTT_Topico_PJI3);
     }
+
+    
 }
 
 void loop() {
@@ -46,11 +49,13 @@ void loop() {
         Serial.print(umidade);
         Serial.println("%");
 
-        String payloadTemp = String(temperatura) + " " + mqttClientId;
-        String payloadUmid = String(umidade) + " " + mqttClientId;
+        String payloadTemp = "A=" + String(temperatura);
+        String payloadUmid = "B=" + String(umidade);
+        String payload = mqttClientId + "_" + payloadTemp + "_" + payloadUmid + "@";
 
-        mqtt.publish(MQTT_Topico_Temperatura, payloadTemp.c_str());
-        mqtt.publish(MQTT_Topico_Umidade, payloadUmid.c_str());
+        //mqtt.publish(MQTT_Topico_Temperatura, payloadTemp.c_str());
+        //mqtt.publish(MQTT_Topico_Umidade, payloadUmid.c_str());
+        mqtt.publish(MQTT_Topico_PJI3,payload.c_str());
     } else {
         Serial.println("Erro ao ler a temperatura!");
     }
