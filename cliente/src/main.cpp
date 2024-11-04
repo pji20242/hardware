@@ -21,6 +21,19 @@ SensorTempUmid sensor(4, DHT22);
 MQTT mqtt(MQTT_BROKER, MQTT_PORT);
 String mqttClientId;
 
+
+string generatePayload(const float &ArraySensors[2]){
+    String payload = mqttClientId;
+    int i
+    char l = 'A'
+    while(l<=(*(&arr + 1) - arr)) {
+        payload += "_" + l + "=" + String(ArraySensors[i]);
+        l++;
+        i++;
+    }
+    payload += "@";
+}
+
 void setup() {
     Serial.begin(9600);
     sensor.begin();
@@ -39,8 +52,13 @@ void setup() {
 }
 
 void loop() {
-    float temperatura = sensor.lerTemperatura();
-    float umidade = sensor.lerUmidade();
+    //float temperatura = sensor.lerTemperatura();
+    //float umidade = sensor.lerUmidade();
+    
+    float ArraySensors[2] = {};
+    ArraySensors[0] = sensor.lerTemperatura();
+    ArraySensors[1] = sensor.lerUmidade();
+    
 
     if (!isnan(temperatura)) {
         Serial.print("Temperatura: ");
@@ -49,9 +67,10 @@ void loop() {
         Serial.print(umidade);
         Serial.println("%");
 
-        String payloadTemp = "A=" + String(temperatura);
-        String payloadUmid = "B=" + String(umidade);
-        String payload = mqttClientId + "_" + payloadTemp + "_" + payloadUmid + "@";
+        generatePayload(ArraySensors)
+        //String payloadTemp = "A=" + String(temperatura);
+        //String payloadUmid = "B=" + String(umidade);
+        //String payload = mqttClientId + "_" + payloadTemp + "_" + payloadUmid + "@";
 
         //mqtt.publish(MQTT_Topico_Temperatura, payloadTemp.c_str());
         //mqtt.publish(MQTT_Topico_Umidade, payloadUmid.c_str());
