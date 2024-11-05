@@ -12,7 +12,7 @@
 | ----------- | ------- |
 | A - Z | Código do sensores |
 | = | Delimitador do Código e Informação do sensor |
-| _ (underline) | Delimitador interno dos diferentes payload |
+| _ | Delimitador interno dos diferentes payload |
 | @ | Delimitador final da mensagem |
 
 
