@@ -8,23 +8,32 @@
 #include "bmp280.h"
 #include "luminosidade.h"
 #include <string>
+#include "DS18B20.h"
 
 // #define SSID "seu_ssid"
 // #define PASSWORD "sua_senha"
 
+//Definitions for WiFi
 #define SSID "Frederico"
 #define PASSWORD "Mari#2606"
-
+//Definitions for MQTT
 #define MQTT_BROKER "vm0.pji3.sj.ifsc.edu.br"
 #define MQTT_PORT 1883
 #define MQTT_Topico_Temperatura "temperatura"
 #define MQTT_Topico_Umidade "umidade"
 #define MQTT_Topico_PJI3 "PJI3"
+//Definitions pins for Sensors
+#define ONE_WIRE_BUS 4
+
+// Global variables and defines
 SensorTempUmid sensor(13, DHT22);
 MQTT mqtt(MQTT_BROKER, MQTT_PORT);
 String mqttClientId;
 BMP280Sensor bmp280;
-Luminosidade luminosidade(35, 3.3);
+Luminosidade luminosidade(A15, 3.3);
+OneWire oneWire(ONE_WIRE_BUS);
+DS18B20 temp_ds18b20(&oneWire);
+
 
 // String generatePayload(const float &ArraySensors[2]){
 //     String payload = mqttClientId;
@@ -42,7 +51,11 @@ void setup() {
     Serial.begin(9600);
     sensor.begin();
     luminosidade.begin();
-    luminosidade.setAnalogPin(35);
+    luminosidade.setAnalogPin(A15);
+
+    temp_ds18b20.begin(); //TODO: Criar metodo para verificar se o sensor está conectado
+    //  arbitrary number for the demo
+    temp_ds18b20.setOffset(0.25);
 
     Wire.begin();
     if (!bmp280.iniciar()) {
@@ -72,7 +85,10 @@ void loop() {
     float ArraySensors[2] = {};
     ArraySensors[0] = sensor.lerTemperatura();
     ArraySensors[1] = sensor.lerUmidade();
+
+    temp_ds18b20.requestTemperatures();
     
+       
 
     if (!isnan(tempDHT)) {
         Serial.print("Temperatura: ");
@@ -93,12 +109,20 @@ void loop() {
         //LDR - Luminosidade
         Serial.print("Luminosidade: ");
         Serial.print(luminosidade.calculatePercentage());
-        Serial.println("%");
-        Serial.print("Tensão: ");
+        Serial.print("%");
+        Serial.print(" - Tensão: ");
         Serial.print(luminosidade.readVoltage());
-        Serial.println("mV");
-        Serial.println("ReadRaw: ");
-        Serial.println(luminosidade.readRaw());
+        Serial.print(" mV - ");
+        Serial.print(" - ReadRaw: ");
+        Serial.print(luminosidade.readRaw());
+        Serial.println("");
+
+        // //DS18B20 - Temperatura
+        Serial.print("Temp DS18B20: ");
+        Serial.print(temp_ds18b20.getTempC());
+        Serial.println("°C");
+
+
 
 
         //generatePayload(ArraySensors)
@@ -114,5 +138,5 @@ void loop() {
     }
 
     //mqtt.loop();
-    delay(2000);
+    delay(5000);
 }
