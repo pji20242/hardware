@@ -10,43 +10,74 @@
 #include <string>
 #include "DS18B20.h"
 #include "message.h"
+#include "MQ2.h"
+#include "MQ7.h"
 
-// #define SSID "seu_ssid"
-// #define PASSWORD "sua_senha"
+/*
+    DEFINIÇÕES DE CONSTANTES
+*/
 
-// Definitions for WiFi
+// Configurações de WiFi
 #define SSID "Frederico"
 #define PASSWORD "Mari#2606"
-// Definitions for MQTT
+
+// Configurações do MQTT
 #define MQTT_BROKER "vm0.pji3.sj.ifsc.edu.br"
 #define MQTT_PORT 1883
-#define MQTT_Topico_Temperatura "temperatura"
-#define MQTT_Topico_Umidade "umidade"
 #define MQTT_Topico_PJI3 "PJI3"
-// Definitions pins for Sensors
-#define ONE_WIRE_BUS 4
+
+// Configurações de sensores
+#define ONE_WIRE_BUS 4 // Pino para o sensor DS18B20
+#define PINO_MQ2 32    // GPIO 32 para o sensor MQ2
+#define PINO_MQ7 33    // GPIO 33 para o sensor MQ7
+
+// UUID do dispositivo
 #define UUID "matheus"
 
-// Global variables and defines
-SensorTempUmid sensor(13, DHT22);
-MQTT mqtt(MQTT_BROKER, MQTT_PORT);
-String mqttClientId;
-BMP280Sensor bmp280;
-Luminosidade luminosidade(A15, 3.3);
-OneWire oneWire(ONE_WIRE_BUS);
-DS18B20 temp_ds18b20(&oneWire);
+/*
+    OBJETOS E VARIÁVEIS GLOBAIS
+*/
+SensorTempUmid sensor(13, DHT22);    // Sensor DHT22 (Temperatura e Umidade)
+MQTT mqtt(MQTT_BROKER, MQTT_PORT);   // Cliente MQTT
+String mqttClientId;                 // ID do cliente MQTT
+BMP280Sensor bmp280;                 // Sensor BMP280 (Pressão e Altitude)
+Luminosidade luminosidade(A15, 3.3); // Sensor LDR de Luminosidade
+OneWire oneWire(ONE_WIRE_BUS);       // Comunicação OneWire
+DS18B20 temp_ds18b20(&oneWire);      // Sensor DS18B20 (Temperatura)
+MQ2 mq2(PINO_MQ2);                   // Sensor MQ2 (Gás inflamável)
+MQ7 mq7(PINO_MQ7);                   // Sensor MQ7 (Monóxido de Carbono)
 
+/*
+    FUNÇÃO SETUP
+*/
 void setup()
 {
-    Serial.begin(9600);
-    sensor.begin();
-    luminosidade.begin();
-    luminosidade.setAnalogPin(A15);
+    Serial.begin(115200);
+    Serial.println("Iniciando sistema...");
 
-    temp_ds18b20.begin(); // TODO: Criar metodo para verificar se o sensor está conectado
-    //  arbitrary number for the demo
-    temp_ds18b20.setOffset(0.25);
+    // Inicializa os sensores
+    sensor.begin();       // DHT22
+    luminosidade.begin(); // LDR
+    temp_ds18b20.begin(); // DS18B20
+    mq2.iniciar();        // MQ2
+    mq7.iniciar();        // MQ7
 
+    // Configurações de WiFi
+    setupWiFi(SSID, PASSWORD);
+
+    // Configurações do MQTT
+    mqtt.setCallback(callback);
+    if (mqtt.connect(mqttClientId))
+    {
+        mqtt.subscribe(MQTT_Topico_PJI3);
+        Serial.println("Conectado ao broker MQTT!");
+    }
+    else
+    {
+        Serial.println("Erro ao conectar ao broker MQTT.");
+    }
+
+    // Configurações do BMP280
     Wire.begin();
     if (!bmp280.iniciar())
     {
@@ -55,77 +86,114 @@ void setup()
     else
     {
         Serial.println("Sensor BMP280 iniciado com sucesso!");
-        float pressao = bmp280.lerPressao();
-        float altitude = bmp280.lerAltitude();
     }
-    // setupWiFi(SSID, PASSWORD);
-    mqtt.setCallback(callback);
-    if (mqtt.connect(mqttClientId))
-    {
-        mqtt.subscribe(MQTT_Topico_PJI3);
-    }
+
+    // Calibração inicial dos sensores MQ2 e MQ7
+    Serial.println("Calibrando sensores MQ2 e MQ7...");
+    mq2.calibrar(10);
+    mq7.calibrar(10);
+    Serial.println("Calibração concluída.");
 }
 
+/*
+    FUNÇÃO LOOP
+*/
 void loop()
 {
-    //float tempDHT = sensor.lerTemperatura();
-    float umidDHT = sensor.lerUmidade();
+    // Solicita temperatura do sensor DS18B20
     temp_ds18b20.requestTemperatures();
 
+    // Variável para armazenar o payload MQTT
     std::string payload = UUID;
 
     // DS18B20 - Temperatura
     if (temp_ds18b20.isConnected())
     {
-        Serial.print("Temp DS18B20: ");
-        Serial.print(temp_ds18b20.getTempC());
-        Serial.println("°C");
-        payload += create_payload(TEMPERATURA, temp_ds18b20.getTempC());
+        float tempDS = temp_ds18b20.getTempC();
+        Serial.print("Temperatura DS18B20: ");
+        Serial.print(tempDS);
+        Serial.println(" °C");
+
+        payload += create_payload(TEMPERATURA, tempDS);
+    }
+    else
+    {
+        Serial.println("Erro: Sensor DS18B20 não conectado!");
     }
 
-    // BMP280
+    // BMP280 - Pressão e Altitude
     if (bmp280.estaFuncionando())
     {
-        Serial.print("Pressão: ");
-        Serial.print(bmp280.lerPressao());
-        Serial.print("hPa - Altitude: ");
-        Serial.print(bmp280.lerAltitude());
-        Serial.println("m");
-        payload += create_payload(ATMOSFERA, bmp280.lerPressao());
+        float pressao = bmp280.lerPressao();
+        float altitude = bmp280.lerAltitude();
+
+        Serial.print("Pressão BMP280: ");
+        Serial.print(pressao);
+        Serial.print(" hPa - Altitude: ");
+        Serial.print(altitude);
+        Serial.println(" m");
+
+        payload += create_payload(ATMOSFERA, pressao);
+    }
+    else
+    {
+        Serial.println("Erro: Sensor BMP280 não está funcionando!");
     }
 
-    // MQ2
+    // MQ2 - Sensor de Gás Inflamável
+    int leituraMQ2 = mq2.lerSensor();
+    float concentracaoMQ2 = mq2.obterConcentracaoGas();
+    if (leituraMQ2 > 0)
+    {
+        Serial.print("Leitura MQ2 (Gás Inflamável): ");
+        Serial.print(concentracaoMQ2);
+        Serial.println(" ppm");
 
-    // MQ7
+        payload += create_payload(INFLAMAVEL, concentracaoMQ2);
+    }
 
-    // DHT22
+    // MQ7 - Sensor de Monóxido de Carbono (CO)
+    int leituraMQ7 = mq7.lerSensor();
+    float concentracaoMQ7 = mq7.obterConcentracaoCO();
+    if (leituraMQ7 > 0)
+    {
+        Serial.print("Leitura MQ7 (CO): ");
+        Serial.print(concentracaoMQ7);
+        Serial.println(" ppm");
+
+        payload += create_payload(MONO_CARBONO, concentracaoMQ7);
+    }
+
+    // DHT22 - Umidade
+    float umidDHT = sensor.lerUmidade();
     if (!isnan(umidDHT))
     {
-        // Serial.print("Temperatura: ");
-        // Serial.print(tempDHT);
-        Serial.print("°C - Umidade: ");
+        Serial.print("Umidade DHT22: ");
         Serial.print(umidDHT);
-        Serial.println("%");
+        Serial.println(" %");
+
         payload += create_payload(UMIDADE, umidDHT);
     }
 
     // LDR - Luminosidade
-    // Verifica se o sensor de luminosidade está funcionando corretamente
-    if (luminosidade.calculatePercentage() < 100)
+    float luminosidadePct = luminosidade.calculatePercentage();
+    if (luminosidadePct >= 0 && luminosidadePct <= 100)
     {
-    Serial.print("Luminosidade: ");
-    Serial.print(luminosidade.calculatePercentage());
-    Serial.print("%");
-    // Serial.print(" - Tensão: ");
-    // Serial.print(luminosidade.readVoltage());
-    // Serial.print(" mV - ");
-    // Serial.print(" - ReadRaw: ");
-    // Serial.print(luminosidade.readRaw());
-    // Serial.println("");
-    payload += create_payload(LUMINOSIDADE, luminosidade.calculatePercentage());
+        Serial.print("Luminosidade: ");
+        Serial.print(luminosidadePct);
+        Serial.println(" %");
+
+        payload += create_payload(LUMINOSIDADE, luminosidadePct);
     }
-    // Publish the payload
+
+    // Publica os dados no broker MQTT
     mqtt.publish(MQTT_Topico_PJI3, payload.c_str());
+    Serial.println("Payload publicado no MQTT:");
+    Serial.println(payload.c_str());
+
+    // Mantém a conexão MQTT ativa
     mqtt.loop();
-delay(5000);
+
+    // Intervalo de 5 segundos entre as leituras
+    delay(5000);
 }
