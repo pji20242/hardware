@@ -1,37 +1,35 @@
 #include "bmp280.h"
 
-// Construtor: inicializa o endereço e a pressão ao nível do mar
+/**
+ * @brief Construtor da classe BMP280Sensor.
+ * @param endereco Endereço I2C do sensor BMP280.
+ * @param pressaoNivelMar Pressão de referência ao nível do mar.
+ */
 BMP280Sensor::BMP280Sensor(uint8_t endereco, float pressaoNivelMar)
-    : enderecoBMP(endereco), pressaoNivelMar(pressaoNivelMar) {}
+    : enderecoI2C(endereco), pressaoReferencia(pressaoNivelMar) {}
 
-// Inicializa o sensor BMP280
+/**
+ * @brief Inicializa o sensor BMP280.
+ * @return true se o sensor for detectado e inicializado corretamente.
+ */
 bool BMP280Sensor::iniciar() {
-    return bmp.begin(enderecoBMP); // Retorna verdadeiro se o sensor for encontrado
+    return sensorBMP.begin(enderecoI2C);
 }
 
-// Verifica se o sensor está funcionando corretamente
+/**
+ * @brief Verifica se o sensor BMP280 está retornando valores válidos.
+ * @return true se os dados forem válidos, false caso contrário.
+ */
 bool BMP280Sensor::estaFuncionando() {
-    float temperatura = bmp.readTemperature();
-    float pressao = bmp.readPressure();
-    return !(isnan(temperatura) || isnan(pressao)); // Verifica se os dados são válidos
+    float temperatura = sensorBMP.readTemperature();
+    float pressao = sensorBMP.readPressure();
+    return !(isnan(temperatura) || isnan(pressao)); // Verifica se os valores são válidos
 }
 
-// Lê a temperatura em graus Celsius
-float BMP280Sensor::lerTemperatura() {
-    return bmp.readTemperature();
-}
-
-// Lê a pressão em hPa
-float BMP280Sensor::lerPressao() {
-    return bmp.readPressure() / 100.0F; // Converte a pressão para hPa
-}
-
-// Calcula a altitude com base na pressão ao nível do mar
+/**
+ * @brief Calcula a altitude com base na pressão medida e pressão de referência.
+ * @return Altitude em metros.
+ */
 float BMP280Sensor::lerAltitude() {
-    return bmp.readAltitude(pressaoNivelMar);
-}
-
-// Atualiza o valor da pressão ao nível do mar
-void BMP280Sensor::configurarPressaoNivelMar(float novaPressao) {
-    pressaoNivelMar = novaPressao;
+    return sensorBMP.readAltitude(pressaoReferencia);
 }

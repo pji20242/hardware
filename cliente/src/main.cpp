@@ -24,12 +24,16 @@
 // Configurações do MQTT
 #define MQTT_BROKER "vm0.pji3.sj.ifsc.edu.br"
 #define MQTT_PORT 1883
-#define MQTT_Topico_PJI3 "PJI3"
+#define MQTT_TOPIC "PJI3"
 
 // Configurações de sensores
 #define ONE_WIRE_BUS 4 // Pino para o sensor DS18B20
 #define PINO_MQ2 32    // GPIO 32 para o sensor MQ2
 #define PINO_MQ7 33    // GPIO 33 para o sensor MQ7
+#define RL 300         // Valor do RL no circuito (300 ohms)
+
+// Intervalos de leituras
+#define INTERVALO_LEITURA 10000 // 10 segundos
 
 // UUID do dispositivo
 #define UUID "matheus"
@@ -37,15 +41,15 @@
 /*
     OBJETOS E VARIÁVEIS GLOBAIS
 */
-SensorTempUmid sensor(13, DHT22);    // Sensor DHT22 (Temperatura e Umidade)
-MQTT mqtt(MQTT_BROKER, MQTT_PORT);   // Cliente MQTT
-String mqttClientId;                 // ID do cliente MQTT
-BMP280Sensor bmp280;                 // Sensor BMP280 (Pressão e Altitude)
-Luminosidade luminosidade(A15, 3.3); // Sensor LDR de Luminosidade
-OneWire oneWire(ONE_WIRE_BUS);       // Comunicação OneWire
-DS18B20 temp_ds18b20(&oneWire);      // Sensor DS18B20 (Temperatura)
-MQ2 mq2(PINO_MQ2);                   // Sensor MQ2 (Gás inflamável)
-MQ7 mq7(PINO_MQ7);                   // Sensor MQ7 (Monóxido de Carbono)
+SensorTempUmid sensorDHT22(13, DHT22);    // Sensor DHT22 (Temperatura e Umidade)
+MQTT mqtt(MQTT_BROKER, MQTT_PORT);        // Cliente MQTT
+String mqttClientId;                      // ID do cliente MQTT
+BMP280Sensor bmp280;                      // Sensor BMP280 (Pressão e Altitude)
+Luminosidade sensorLuminosidade(A15, 3.3); // Sensor LDR de Luminosidade
+OneWire oneWire(ONE_WIRE_BUS);            // Comunicação OneWire
+DS18B20 sensorDS18B20(&oneWire);          // Sensor DS18B20 (Temperatura)
+MQ2 sensorMQ2(PINO_MQ2, RL);              // Sensor MQ2 (Gás inflamável)
+MQ7 sensorMQ7(PINO_MQ7);                  // Sensor MQ7 (Monóxido de Carbono)
 
 /*
     FUNÇÃO SETUP
@@ -56,43 +60,39 @@ void setup()
     Serial.println("Iniciando sistema...");
 
     // Inicializa os sensores
-    sensor.begin();       // DHT22
-    luminosidade.begin(); // LDR
-    temp_ds18b20.begin(); // DS18B20
-    mq2.iniciar();        // MQ2
-    mq7.iniciar();        // MQ7
+    sensorDHT22.begin();
+    sensorLuminosidade.begin();
+    sensorDS18B20.begin();
+    sensorMQ2.iniciar();
+    sensorMQ2.calibrar();
+    sensorMQ7.iniciar();
+    sensorMQ7.calibrar();
 
-    // Configurações de WiFi
+    // Configuração do WiFi
     setupWiFi(SSID, PASSWORD);
 
-    // Configurações do MQTT
+    // Configuração do MQTT
     mqtt.setCallback(callback);
     if (mqtt.connect(mqttClientId))
     {
-        mqtt.subscribe(MQTT_Topico_PJI3);
+        mqtt.subscribe(MQTT_TOPIC);
         Serial.println("Conectado ao broker MQTT!");
     }
     else
     {
-        Serial.println("Erro ao conectar ao broker MQTT.");
+        Serial.println("Erro: Não foi possível conectar ao broker MQTT.");
     }
 
-    // Configurações do BMP280
+    // Configuração do BMP280
     Wire.begin();
     if (!bmp280.iniciar())
     {
-        Serial.println("Erro ao iniciar o sensor BMP280!");
+        Serial.println("Erro: Falha ao iniciar o sensor BMP280!");
     }
     else
     {
-        Serial.println("Sensor BMP280 iniciado com sucesso!");
+        Serial.println("Sensor BMP280 inicializado com sucesso!");
     }
-
-    // Calibração inicial dos sensores MQ2 e MQ7
-    Serial.println("Calibrando sensores MQ2 e MQ7...");
-    mq2.calibrar(10);
-    mq7.calibrar(10);
-    Serial.println("Calibração concluída.");
 }
 
 /*
@@ -101,99 +101,83 @@ void setup()
 void loop()
 {
     // Solicita temperatura do sensor DS18B20
-    temp_ds18b20.requestTemperatures();
+    sensorDS18B20.requestTemperatures();
 
-    // Variável para armazenar o payload MQTT
+    // Inicializa o payload MQTT
     std::string payload = UUID;
 
-    // DS18B20 - Temperatura
-    if (temp_ds18b20.isConnected())
-    {
-        float tempDS = temp_ds18b20.getTempC();
-        Serial.print("Temperatura DS18B20: ");
-        Serial.print(tempDS);
-        Serial.println(" °C");
+    /*
+        LEITURAS DOS SENSORES
+    */
 
-        payload += create_payload(TEMPERATURA, tempDS);
+    // Leitura DS18B20
+    if (sensorDS18B20.isConnected())
+    {
+        float temperaturaDS = sensorDS18B20.getTempC();
+        Serial.printf("Temperatura DS18B20: %.2f °C\n", temperaturaDS);
+        payload += create_payload(TEMPERATURA, temperaturaDS);
     }
     else
     {
-        Serial.println("Erro: Sensor DS18B20 não conectado!");
+        Serial.println("Erro: Sensor DS18B20 desconectado.");
     }
 
-    // BMP280 - Pressão e Altitude
+    // Leitura BMP280
     if (bmp280.estaFuncionando())
     {
         float pressao = bmp280.lerPressao();
         float altitude = bmp280.lerAltitude();
-
-        Serial.print("Pressão BMP280: ");
-        Serial.print(pressao);
-        Serial.print(" hPa - Altitude: ");
-        Serial.print(altitude);
-        Serial.println(" m");
-
+        Serial.printf("Pressão BMP280: %.2f hPa - Altitude: %.2f m\n", pressao, altitude);
         payload += create_payload(ATMOSFERA, pressao);
     }
     else
     {
-        Serial.println("Erro: Sensor BMP280 não está funcionando!");
+        Serial.println("Erro: Falha ao ler dados do sensor BMP280.");
     }
 
-    // MQ2 - Sensor de Gás Inflamável
-    int leituraMQ2 = mq2.lerSensor();
-    float concentracaoMQ2 = mq2.obterConcentracaoGas();
-    if (leituraMQ2 > 0)
+    // Leitura MQ2
+    if (sensorMQ2.lerSensor() >= 0)
     {
-        Serial.print("Leitura MQ2 (Gás Inflamável): ");
-        Serial.print(concentracaoMQ2);
-        Serial.println(" ppm");
-
-        payload += create_payload(INFLAMAVEL, concentracaoMQ2);
+        float ppmMQ2 = sensorMQ2.obterPPM();
+        Serial.printf("Concentração GLP MQ2: %.2f ppm\n", ppmMQ2);
+        payload += create_payload(INFLAMAVEL, ppmMQ2);
     }
 
-    // MQ7 - Sensor de Monóxido de Carbono (CO)
-    int leituraMQ7 = mq7.lerSensor();
-    float concentracaoMQ7 = mq7.obterConcentracaoCO();
-    if (leituraMQ7 > 0)
+    // Leitura MQ7
+    int leituraMQ7 = sensorMQ7.lerSensor();
+    if (leituraMQ7 >= 0)
     {
-        Serial.print("Leitura MQ7 (CO): ");
-        Serial.print(concentracaoMQ7);
-        Serial.println(" ppm");
-
-        payload += create_payload(MONO_CARBONO, concentracaoMQ7);
+        float concentracaoCO = sensorMQ7.obterConcentracaoCO();
+        Serial.printf("Concentração de CO MQ7: %.2f ppm\n", concentracaoCO);
+        payload += create_payload(MONO_CARBONO, concentracaoCO);
     }
 
-    // DHT22 - Umidade
-    float umidDHT = sensor.lerUmidade();
-    if (!isnan(umidDHT))
+    // Leitura DHT22
+    float umidade = sensorDHT22.lerUmidade();
+    if (!isnan(umidade))
     {
-        Serial.print("Umidade DHT22: ");
-        Serial.print(umidDHT);
-        Serial.println(" %");
-
-        payload += create_payload(UMIDADE, umidDHT);
+        Serial.printf("Umidade DHT22: %.2f %%\n", umidade);
+        payload += create_payload(UMIDADE, umidade);
     }
 
-    // LDR - Luminosidade
-    float luminosidadePct = luminosidade.calculatePercentage();
-    if (luminosidadePct >= 0 && luminosidadePct <= 100)
+    // Leitura LDR
+    float luminosidade = sensorLuminosidade.calculatePercentage();
+    if (luminosidade >= 0 && luminosidade <= 100)
     {
-        Serial.print("Luminosidade: ");
-        Serial.print(luminosidadePct);
-        Serial.println(" %");
-
-        payload += create_payload(LUMINOSIDADE, luminosidadePct);
+        Serial.printf("Luminosidade: %.2f %%\n", luminosidade);
+        payload += create_payload(LUMINOSIDADE, luminosidade);
     }
 
-    // Publica os dados no broker MQTT
-    mqtt.publish(MQTT_Topico_PJI3, payload.c_str());
-    Serial.println("Payload publicado no MQTT:");
+    /*
+        ENVIO DOS DADOS VIA MQTT
+    */
+    mqtt.publish(MQTT_TOPIC, payload.c_str());
+    Serial.println("Payload enviado ao broker MQTT:");
     Serial.println(payload.c_str());
 
     // Mantém a conexão MQTT ativa
     mqtt.loop();
 
-    // Intervalo de 5 segundos entre as leituras
-    delay(5000);
+    // Intervalo entre as leituras
+    delay(INTERVALO_LEITURA);
 }

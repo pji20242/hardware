@@ -3,29 +3,58 @@
 
 #include <Adafruit_BMP280.h>
 
+/**
+ * @brief Classe responsável pela interface com o sensor BMP280.
+ */
 class BMP280Sensor {
 private:
-    Adafruit_BMP280 bmp;       // Instância do sensor BMP280
-    uint8_t enderecoBMP;       // Endereço I2C do sensor
-    float pressaoNivelMar;     // Pressão ao nível do mar em hPa
+    Adafruit_BMP280 sensorBMP;    // Instância do sensor BMP280
+    uint8_t enderecoI2C;          // Endereço I2C do sensor BMP280
+    float pressaoReferencia;      // Pressão de referência ao nível do mar (em hPa)
 
 public:
-    // Construtor: permite definir o endereço do sensor e a pressão ao nível do mar
+    /**
+     * @brief Construtor da classe BMP280Sensor.
+     * @param endereco Endereço I2C do sensor BMP280 (padrão: 0x76).
+     * @param pressaoNivelMar Pressão de referência ao nível do mar (padrão: 1013.25 hPa).
+     */
     BMP280Sensor(uint8_t endereco = 0x76, float pressaoNivelMar = 1013.25);
 
-    // Inicializa o sensor e retorna verdadeiro (true) se bem-sucedido
+    /**
+     * @brief Inicializa o sensor BMP280.
+     * @return true se a inicialização for bem-sucedida, false caso contrário.
+     */
     bool iniciar();
 
-    // Verifica se o sensor está funcionando corretamente
+    /**
+     * @brief Verifica se o sensor está funcionando corretamente.
+     * @return true se os dados do sensor forem válidos, false caso contrário.
+     */
     bool estaFuncionando();
 
-    // Funções para obter os dados do sensor
-    float lerTemperatura();    // Retorna a temperatura em graus Celsius
-    float lerPressao();        // Retorna a pressão em hPa
-    float lerAltitude();       // Retorna a altitude baseada na pressão ao nível do mar
+    /**
+     * @brief Lê a temperatura medida pelo sensor.
+     * @return Temperatura em graus Celsius.
+     */
+    inline float lerTemperatura() { return sensorBMP.readTemperature(); }
 
-    // Atualiza o valor da pressão ao nível do mar
-    void configurarPressaoNivelMar(float novaPressao);
+    /**
+     * @brief Lê a pressão medida pelo sensor.
+     * @return Pressão em hPa.
+     */
+    inline float lerPressao() { return sensorBMP.readPressure() / 100.0F; }
+
+    /**
+     * @brief Calcula a altitude baseada na pressão medida e na pressão de referência.
+     * @return Altitude em metros.
+     */
+    float lerAltitude();
+
+    /**
+     * @brief Atualiza o valor da pressão de referência ao nível do mar.
+     * @param novaPressao Novo valor de pressão em hPa.
+     */
+    inline void configurarPressaoReferencia(float novaPressao) { pressaoReferencia = novaPressao; }
 };
 
 #endif
