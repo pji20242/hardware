@@ -11,6 +11,16 @@ Exemplo prático:
 mosquitto_pub -h 191.36.8.52 -p 1883 -t pji3 -d -m "rhenzo%1=2"
 ```
 
+## **Lista de componentes**
+| **Componente** | **Especificação** |
+| ----------- | ------- |
+| Microcontrolador | ESP-32 |
+| Regulador de tensão | 3.3V e 5V |
+| Resistor | 1K Ω |
+| Resistor | 470 Ω |
+| Resistor | 10K Ω |
+| Resistor | 4.7K Ω |
+
 
 ## **Simbolos Delimitadores Utilizados**
 | **Simbolo** | **Uso** |
