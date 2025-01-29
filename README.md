@@ -48,7 +48,7 @@ Este documento detalha o hardware utilizado e fornece informações para desenvo
 
 
 ### **Esquemático Elétrico**
-[Esquemático Elétrico](https://raw.githubusercontent.com/pji20242/hardware/refs/heads/main/imagens/esquematico_bb.png)
+![Esquemático Elétrico](https://raw.githubusercontent.com/pji20242/hardware/refs/heads/main/imagens/esquematico_bb.png)
 
 ### **Código-Fonte e Alterações**
 O código do cliente pode ser acessado pelo repositório: [GitHub - pji20242/hardware](https://github.com/pji20242/hardware/tree/main/cliente/src)
