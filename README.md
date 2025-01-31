@@ -3,17 +3,19 @@ Este documento detalha o hardware utilizado e fornece informações para aqueles
 
 ## **Índice**
 
-1. [Hardware Próprio](#hardware-próprio)
-   - [Lista de Componentes](#lista-de-componentes)
-        - [Conexões feitas com os sensores](#conexões-feitas-com-os-sensores-e-parâmetros)
-   - [Esquemático Elétrico](#esquemático-elétrico)
-   - [Código-Fonte](#código-fonte)
-      - [Cadastro e Obtenção do UUID](#cadastro-e-obtenção-do-uuid)
-      - [Modificações Necessárias no Código](#modificações-necessárias-no-código)
-2. [Para Desenvolvedores](#para-desenvolvedores)
-   - [Estrutura de Mensagens](#estrutura-de-mensagens)
-   - [Sensores Compatíveis](#sensores-compatíveis)
-      - [Cadastro e Obtenção do UUID](#cadastro-e-obtenção-do-uuid)
+- [**Documentação do Hardware**](#documentação-do-hardware)
+  - [**Índice**](#índice)
+  - [**Hardware Próprio**](#hardware-próprio)
+    - [**Lista de componentes**](#lista-de-componentes)
+      - [**Conexões feitas com os sensores e parâmetros:**](#conexões-feitas-com-os-sensores-e-parâmetros)
+    - [**Esquemático Elétrico**](#esquemático-elétrico)
+    - [**Código-Fonte**](#código-fonte)
+      - [**Cadastro e Obtenção do UUID**](#cadastro-e-obtenção-do-uuid)
+      - [**Modificações Necessárias no código**](#modificações-necessárias-no-código)
+  - [**Para Desenvolvedores**](#para-desenvolvedores)
+    - [**Estrutura de mensagens**](#estrutura-de-mensagens)
+    - [**Simbolos Delimitadores Utilizados**](#simbolos-delimitadores-utilizados)
+    - [**Tabela de Sensores Utilizados**](#tabela-de-sensores-utilizados)
 
 ---
 ## **Hardware Próprio**
@@ -52,7 +54,7 @@ Este hardware foi desenvolvido para facilitar a coleta e transmissão de dados d
 
 ### **Esquemático Elétrico**
 Aqui temos o esquemático para auxiliar a montagem de um circuito caso haja interesse de usar este modelo.
-![Esquemático Elétrico](https://raw.githubusercontent.com/pji20242/hardware/refs/heads/main/imagens/esquematico_bb.png)
+![Esquemático Elétrico](imagens/esquema_eletrico.png)
 
 ### **Código-Fonte**
 O código do cliente pode ser acessado pelo repositório: [GitHub - pji20242/hardware](https://github.com/pji20242/hardware/tree/main/cliente/src)
