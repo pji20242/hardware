@@ -1,5 +1,5 @@
 # **Documentação do Hardware**
-Este documento detalha o hardware utilizado e fornece informações para desenvolver dispositivos próprios e que possam ser integrados 
+Este documento detalha o hardware utilizado e fornece informações para aqueles que querem desenvolver dispositivos próprios para que possam ser integrados 
 
 ## **Índice**
 
@@ -8,13 +8,16 @@ Este documento detalha o hardware utilizado e fornece informações para desenvo
         - [Conexões feitas com os sensores](#conexões-feitas-com-os-sensores-e-parâmetros)
    - [Esquemático Elétrico](#esquemático-elétrico)
    - [Código-Fonte](#código-fonte)
+      - [Cadastro e Obtenção do UUID](#cadastro-e-obtenção-do-uuid)
+      - [Modificações Necessárias no Código](#modificações-necessárias-no-código)
 2. [Para Desenvolvedores](#para-desenvolvedores)
    - [Estrutura de Mensagens](#estrutura-de-mensagens)
-   - [Protocolos Suportados](#protocolos-suportados)
    - [Sensores Compatíveis](#sensores-compatíveis)
+      - [Cadastro e Obtenção do UUID](#cadastro-e-obtenção-do-uuid)
 
 ---
 ## **Hardware Próprio**
+Este hardware foi desenvolvido para facilitar a coleta e transmissão de dados de sensores através do protocolo MQTT. Ele consiste em um ESP32 como microcontrolador, sensores diversos e um regulador de tensão para estabilização da alimentação dos componentes.
 
 ### **Lista de componentes**
 |**Componentes**|**Especificação**|
@@ -48,14 +51,25 @@ Este documento detalha o hardware utilizado e fornece informações para desenvo
 
 
 ### **Esquemático Elétrico**
+Aqui temos o esquemático para auxiliar a montagem de um circuito caso haja interesse de usar este modelo.
 ![Esquemático Elétrico](https://raw.githubusercontent.com/pji20242/hardware/refs/heads/main/imagens/esquematico_bb.png)
 
-### **Código-Fonte e Alterações**
+### **Código-Fonte**
 O código do cliente pode ser acessado pelo repositório: [GitHub - pji20242/hardware](https://github.com/pji20242/hardware/tree/main/cliente/src)
 
-É necessária as seguintes alterações:
+É necessária algumas alterações para que o dispositivo possa ter uma comunicação com nossos servidores.
 
+Dessa maneira iremos explicar alguns passos necessários em "[Cadastro e Obtenção do UUID](#cadastro-e-obtenção-do-uuid) "e " [Modificações Necessárias no Código](#modificações-necessárias-no-código)"
+#### **Cadastro e Obtenção do UUID**
 
+_**Necessário Discutir como é feita o cadastro de um aparelho externo**_
+
+#### **Modificações Necessárias no código**
+
+Após ser obtido o UUID e configurados os sensores que são desejadas para transmissão.
+Dentro do arquivo [main.cpp](https://github.com/pji20242/hardware/blob/main/cliente/src/main.cpp) é necessária as seguintes alterações:
+- Os parámetros de [SSID e PASSWORD](https://github.com/pji20242/hardware/blob/0a3bd8475b863cc0eab97bc6db77240796a9d811/cliente/src/main.cpp#L17) para que a ESP-32 se conecte na rede local
+- O parámetro de [UUID](https://github.com/pji20242/hardware/blob/0a3bd8475b863cc0eab97bc6db77240796a9d811/cliente/src/main.cpp#L28) para aquele que foi feito o seu cadastro.
 ## **Para Desenvolvedores**
 Esta seção é destinada para aqueles desenvolvedores que desejam utilizar seus próprios dispositivos e sensores.
 
@@ -63,10 +77,6 @@ Esta seção é destinada para aqueles desenvolvedores que desejam utilizar seus
 As mensagens são enviadas no formato padrão MQTT, com o seguinte exemplo de comando:
 ```bash
 mosquitto_pub -h IP_Broker_MQTT -p Porta_Broker_MQTT -t Tópico -d -m "UUID%1=<valor1>%2=<valor2>%3=<valor3>"
-```
-Exemplo prático:
-```bash
-mosquitto_pub -h 191.36.8.52 -p 1883 -t pji3 -d -m "rhenzo%1=2"
 ```
 
 
@@ -80,7 +90,7 @@ mosquitto_pub -h 191.36.8.52 -p 1883 -t pji3 -d -m "rhenzo%1=2"
 ### **Tabela de Sensores Utilizados** 
 
 
-| Código na Comunicaçao | Parâmetro Associado |
+| Código dos sensores | Parâmetro Associado |
 |----------|----------|
 | 1 | Temperatura |
 | 2 | Pressão Atmosférica |
