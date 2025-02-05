@@ -22,7 +22,7 @@ Este documento detalha o hardware utilizado e fornece informações para aqueles
 Este hardware foi desenvolvido para facilitar a coleta e transmissão de dados de sensores através do protocolo MQTT. Ele consiste em um ESP32 como microcontrolador, sensores diversos e um regulador de tensão para estabilização da alimentação dos componentes.
 
 
-O hardware deve permanecer ligado continuamente para garantir a transmissão de dados.
+**O hardware deve permanecer ligado continuamente para garantir a transmissão de dados.**
 
 
 ### **Lista de componentes**
@@ -100,9 +100,9 @@ mosquitto_pub -h IP_Broker_MQTT -p Porta_Broker_MQTT -t Tópico -d -m "UUID%1=<v
 |----------|----------|----------|
 | 1 | Temperatura | °C |
 | 2 | Pressão Atmosférica | Hectopascals |
-| 3 | Gás Inflamável | |
-| 4 | Fumaça | |
-| 5 | Monóxido de Carbono (CO) | |
+| 3 | Gás Inflamável | Concentração em ppm |
+| 4 | Fumaça | Concentração em ppm |
+| 5 | Monóxido de Carbono (CO) | Concentração em ppm |
 | 6 | Umidade | % |
 | 7 | Luminosidade | % |
 
