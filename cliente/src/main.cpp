@@ -21,7 +21,7 @@
 
 // Definições para MQTT
 #define MQTT_BROKER "vm0.pji3.sj.ifsc.edu.br"
-#define MQTT_PORT 8883 // Porta padrão para MQTT com TLS/SSL
+#define MQTT_PORT 8080 // Porta padrão para MQTT com TLS/SSL
 #define MQTT_Topico_PJI3 "pji3"
 #define MQTT_USER "seu_usuario" // Nome de usuário para autenticação no broker
 #define MQTT_PASSWORD "sua_senha" // Senha para autenticação no broker
