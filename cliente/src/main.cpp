@@ -1,7 +1,6 @@
 #include <Arduino.h>
-#include <WiFiClientSecure.h>
-#include <MQTT.h>
 #include "sensor_temp_umid.h"
+#include "mqtt.h"
 #include "uuid.h"
 #include "mqtt_callback.h"
 #include "wifi_setup.h"
@@ -11,123 +10,115 @@
 #include <string>
 #include "DS18B20.h"
 #include "message.h"
+#include <MQUnifiedsensor.h>
+#include <WiFi.h>
+#include <PubSubClient.h>
+#include <WiFiClientSecure.h>
 
-// Definições para Wi-Fi
+// Definições para WiFi
 #define SSID "Frederico"
 #define PASSWORD "Mari#2606"
 
 // Definições para MQTT
 #define MQTT_BROKER "vm0.pji3.sj.ifsc.edu.br"
-#define MQTT_PORT 8080
-#define MQTT_TOPIC_PJI3 "PJI3"
+#define MQTT_PORT 8883 // Porta padrão para MQTT com TLS/SSL
+#define MQTT_Topico_PJI3 "pji3"
+#define MQTT_USER "seu_usuario" // Nome de usuário para autenticação no broker
+#define MQTT_PASSWORD "sua_senha" // Senha para autenticação no broker
 
-// Definição do UUID
-#define UUID "matheus"
-
-// Definição do certificado da CA em formato PEM
+// Definições para o certificado CA
 const char* ca_cert = \
 "-----BEGIN CERTIFICATE-----\n" \
-"MIID...restante_do_certificado...\n" \
+"SEU_CERTIFICADO_CA_AQUI\n" \
 "-----END CERTIFICATE-----\n";
 
-// Variáveis globais e definições
+// Definições para Sensores
+#define ONE_WIRE_BUS 32
+#define UUID "333d564f-7684-4066-948c-f20446a9ccae"
+
+// Variáveis globais
 SensorTempUmid sensor(13, DHT22);
-WiFiClientSecure net;
-MQTTClient client;
+WiFiClientSecure espClient; // Usar WiFiClientSecure para TLS/SSL
+PubSubClient mqttClient(espClient); // Usar PubSubClient com WiFiClientSecure
 String mqttClientId;
 BMP280Sensor bmp280;
-Luminosidade luminosidade(A15, 3.3);
-OneWire oneWire(4);
+Luminosidade luminosidade(35, 3.3);
+OneWire oneWire(ONE_WIRE_BUS);
 DS18B20 temp_ds18b20(&oneWire);
 
-void connect() {
-  Serial.print("Verificando conexão Wi-Fi...");
-  while (WiFi.status() != WL_CONNECTED) {
-    Serial.print(".");
-    delay(1000);
-  }
-
-  Serial.print("\nConectando ao broker MQTT...");
-  while (!client.connect(mqttClientId.c_str(), "usuario", "senha")) {
-    Serial.print(".");
-    delay(1000);
-  }
-
-  Serial.println("\nConectado!");
-
-  client.subscribe(MQTT_TOPIC_PJI3);
+void setupWiFi(const char* ssid, const char* password) {
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
+    }
+    Serial.println("WiFi conectado");
 }
 
-void messageReceived(String &topic, String &payload) {
-  Serial.println("Mensagem recebida: " + topic + " - " + payload);
+void setupMQTT() {
+    espClient.setCACert(ca_cert); // Configurar o certificado CA
+    mqttClient.setServer(MQTT_BROKER, MQTT_PORT);
+    mqttClient.setCallback(callback);
+
+    if (mqttClient.connect(mqttClientId.c_str(), MQTT_USER, MQTT_PASSWORD)) {
+        Serial.println("Conectado ao broker MQTT com TLS/SSL!");
+        mqttClient.subscribe(MQTT_Topico_PJI3);
+    } else {
+        Serial.println("Falha ao conectar ao broker MQTT!");
+    }
 }
 
 void setup() {
-  Serial.begin(9600);
-  sensor.begin();
-  luminosidade.begin();
-  luminosidade.setAnalogPin(A15);
-  temp_ds18b20.begin();
-  temp_ds18b20.setOffset(0.25);
+    Serial.begin(9600);
+    sensor.begin();
+    luminosidade.begin();
+    luminosidade.setAnalogPin(35);
 
-  Wire.begin();
-  if (!bmp280.iniciar()) {
-    Serial.println("Erro: Falha ao iniciar o sensor BMP280!");
-  } else {
-    Serial.println("Sensor BMP280 iniciado com sucesso!");
-  }
+    temp_ds18b20.begin();
+    temp_ds18b20.setOffset(0.25);
 
-  WiFi.begin(SSID, PASSWORD);
-  net.setCACert(ca_cert);
-  client.begin(MQTT_BROKER, MQTT_PORT, net);
-  client.onMessage(messageReceived);
+    Wire.begin();
+    if (!bmp280.iniciar()) {
+        Serial.println("Erro: Falha ao iniciar o sensor BMP280!");
+    } else {
+        Serial.println("Sensor BMP280 iniciado com sucesso!");
+    }
 
-  connect();
+    setupWiFi(SSID, PASSWORD);
+    setupMQTT();
 }
 
 void loop() {
-  client.loop();
-  delay(10);
+    if (!mqttClient.connected()) {
+        setupMQTT();
+    }
 
-  if (!client.connected()) {
-    connect();
-  }
+    // Leitura dos sensores e construção do payload
+    float umidDHT = sensor.lerUmidade();
+    temp_ds18b20.requestTemperatures();
 
-  float umidDHT = sensor.lerUmidade();
-  temp_ds18b20.requestTemperatures();
+    std::string payload = UUID;
 
-  std::string payload = UUID;
+    if (temp_ds18b20.isConnected()) {
+        payload += create_payload(TEMPERATURA, temp_ds18b20.getTempC());
+    }
 
-  if (temp_ds18b20.isConnected()) {
-    Serial.print("Temp DS18B20: ");
-    Serial.print(temp_ds18b20.getTempC());
-    Serial.println("°C");
-    payload += create_payload(TEMPERATURA, temp_ds18b20.getTempC());
-  }
+    if (bmp280.estaFuncionando()) {
+        payload += create_payload(ATMOSFERA, bmp280.lerPressao());
+    }
 
-  if (bmp280.estaFuncionando()) {
-    Serial.print("Pressão: ");
-    Serial.print(bmp280.lerPressao());
-    Serial.print("hPa - Altitude: ");
-    Serial.print(bmp280.lerAltitude());
-    Serial.println("m");
-    payload += create_payload(ATMOSFERA, bmp280.lerPressao());
-  }
+    if (!isnan(umidDHT)) {
+        payload += create_payload(UMIDADE, umidDHT);
+    }
 
-  if (!isnan(umidDHT)) {
-    Serial.print("Umidade: ");
-    Serial.print(umidDHT);
-    Serial.println("%");
-    payload += create_payload(UMIDADE, umidDHT);
-  }
+    if (luminosidade.calculatePercentage() < 100) {
+        payload += create_payload(LUMINOSIDADE, luminosidade.calculatePercentage());
+    }
 
-  if (luminosidade.calculatePercentage() < 100) {
-    Serial.print("Luminosidade: ");
-    Serial.print(luminosidade.calculatePercentage());
-    Serial.println("%");
-    payload += create_payload(LUMINOSIDADE, luminosidade.calculatePercentage());
-  }
+    // Publicar o payload
+    mqttClient.publish(MQTT_Topico_PJI3, payload.c_str());
+    printf("Payload: %s\n", payload.c_str());
 
-  client.publish(MQTT_TOPIC_PJI3, payload.c_str());
-  delay(5000);
+    mqttClient.loop();
+    delay(60000); // Publicar a cada 60 segundos
 }
