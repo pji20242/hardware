@@ -6,7 +6,7 @@ Este documento detalha o hardware utilizado e fornece informações para aqueles
 - [**Documentação do Hardware**](#documentação-do-hardware)
   - [**Índice**](#índice)
   - [**Hardware Próprio**](#hardware-próprio)
-    - [**Lista de componentes**](#lista-de-componentes)
+    - [**Lista de componentes e custos do projeto**](#lista-de-componentes-e-custos-do-projeto)
       - [**Conexões feitas com os sensores e parâmetros:**](#conexões-feitas-com-os-sensores-e-parâmetros)
     - [**Esquemático Elétrico**](#esquemático-elétrico)
     - [**Código-Fonte**](#código-fonte)
@@ -25,19 +25,27 @@ Este hardware foi desenvolvido para facilitar a coleta e transmissão de dados d
 **O hardware deve permanecer ligado continuamente para garantir a transmissão de dados.**
 
 
-### **Lista de componentes**
-|**Componentes**|**Especificação**|
-| ------------------- | ----------------- |
-| Microcontrolador    | ESP-32            |
-| Regulador de tensão | 3.3V e 5V         |
-| Resistores          | 1K Ω , 470 Ω , 10K Ω    , 4.7K Ω           |
-|Temperatura|DS18B20|
-|Pressão Atmosférica|BMP280|
-|Gás Inflamável|MQ-2|
-|Fumaça|MQ-2|
-|Monóxido de Carbono|MQ-7|
-|Umidade|DHT-22|
-|Luminosidade|LDR|
+### **Lista de componentes e custos do projeto**
+
+| **Componentes**         | **Especificação**       | **Valor (R$)** |
+|-------------------------|-------------------------|----------------|
+| Fonte DC Chaveada       | 9V-1A Plug P4           | 19,90          |
+| Microcontrolador        | ESP32 Devkit V1 (30 pinos) | 44,90          |
+| Regulador de tensão[^1]| saídas (3.3 e 5V)    | 7,90           |
+| Resistores              | 1KΩ x 2, 10KΩ, 470Ω x 2, 4,7KΩ  | 0.54 |
+| Sensor de Gás Inflamável| MQ-2                    | 15,90          |
+| Sensor de Monóxido de Carbono | MQ-7               | 18,90          |
+| Sensor de Luminosidade  | LDR 5mm                 | 1,49           |
+| Sensor de Temperatura   | DS18B20 à prova d'água   | 11,90          |
+| Sensor de Pressão Atmosférica | BMP280           | 5,90           |
+| Sensor de Umidade       | DHT22 / AM2302          | 32,42          |
+| **Total**               |                         | **159,75**[^2]     |
+
+[^1]: No protótipo do projeto foi usado um módulo de fonte para matriz de contatos que é capaz de fornecer duas linhas de alimentação, de 5V e 3,3V. Esse item pode ser substítuido por reguladores de tensção para 5 e 3.3V. 
+
+[^2] Os valores são referetes à aquisição ou pesquisa em lójas especializadas em componentes e marketplace entre novembro de 2024 e fevereiro de 2025.
+
+
 
 #### **Conexões feitas com os sensores e parâmetros:** 
 
@@ -59,6 +67,7 @@ Este hardware foi desenvolvido para facilitar a coleta e transmissão de dados d
 ### **Esquemático Elétrico**
 Aqui temos o esquemático para auxiliar a montagem de um circuito caso haja interesse de usar este modelo.
 ![Esquemático Elétrico](imagens/esquema_eletrico.png)
+
 
 ### **Código-Fonte**
 O código do cliente pode ser acessado pelo repositório: [GitHub - pji20242/hardware](https://github.com/pji20242/hardware/tree/main/cliente/src)
