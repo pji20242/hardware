@@ -41,11 +41,9 @@ Este hardware foi desenvolvido para facilitar a coleta e transmissão de dados d
 | Sensor de Umidade       | DHT22 / AM2302          | 32,42          |
 | **Total**               |                         | **159,75[^2]**|
 
-[^1]: No protótipo do projeto foi usado um módulo de fonte para matriz de contatos que é capaz de fornecer duas linhas de alimentação, de 5V e 3,3V. Esse item pode ser substítuido por reguladores de tensção para 5 e 3.3V. 
+[^1]: No protótipo do projeto, foi utilizado um módulo de fonte para matriz de contatos, capaz de fornecer duas linhas de alimentação: 5V e 3,3V. Esse item pode ser substituído por reguladores de tensão dedicados para 5V e 3,3V.
 
-[^2]: Os valores são referetes à aquisição ou pesquisa em lójas especializadas em componentes e marketplace entre novembro de 2024 e fevereiro de 2025.
-
-
+[^2]: Os valores apresentados são referentes à aquisição ou pesquisa em lojas especializadas em componentes eletrônicos e marketplaces, realizadas entre novembro de 2024 e fevereiro de 2025.
 
 #### **Conexões feitas com os sensores e parâmetros:** 
 
