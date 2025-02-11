@@ -39,11 +39,11 @@ Este hardware foi desenvolvido para facilitar a coleta e transmissão de dados d
 | Sensor de Temperatura   | DS18B20 à prova d'água   | 11,90          |
 | Sensor de Pressão Atmosférica | BMP280           | 5,90           |
 | Sensor de Umidade       | DHT22 / AM2302          | 32,42          |
-| **Total**               |                         | **159,75**[^2]     |
+| **Total**               |                         | **159,75[^2]**|
 
 [^1]: No protótipo do projeto foi usado um módulo de fonte para matriz de contatos que é capaz de fornecer duas linhas de alimentação, de 5V e 3,3V. Esse item pode ser substítuido por reguladores de tensção para 5 e 3.3V. 
 
-[^2] Os valores são referetes à aquisição ou pesquisa em lójas especializadas em componentes e marketplace entre novembro de 2024 e fevereiro de 2025.
+[^2]: Os valores são referetes à aquisição ou pesquisa em lójas especializadas em componentes e marketplace entre novembro de 2024 e fevereiro de 2025.
 
 
 
