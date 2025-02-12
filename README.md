@@ -47,7 +47,7 @@ Este hardware foi desenvolvido para facilitar a coleta e transmissão de dados d
 
 
 
-| Código na Comunicação | Sensores | Tensão de Operação | Tensão de entrada | I operação | Pinos Utilizados na ESP32             | Protocolo de Comunicação Serial | Parâmetro Medido |
+| Código na Comunicação | Sensores | Tensão de Operação | Tensão de entrada | Corrente operação | Pinos Utilizados na ESP32             | Protocolo de Comunicação Serial | Parâmetro Medido |
 |----------|----------|------------|-----------|------------|--------------------------------------|---------------------------------| --------------------------------|
 | 1 | DS18B20  | 3.0 - 5.5V | 3.3V ou 5V | ~1.5mA    | GPIO4 | OneWire pin D04                         | Temperatura	 |
 | 2 | BMP280   | 1.71 - 3.6V | 3.3V      | ~0.006mA  | GPIO21 e GPIO22 | I2C - pin D21                          | Pressão Atmosférica	 |
@@ -76,7 +76,7 @@ O código do cliente pode ser acessado pelo repositório: [GitHub - pji20242/har
 Dessa maneira iremos explicar alguns passos necessários em "[Cadastro e Obtenção do UUID](#cadastro-e-obtenção-do-uuid) "e " [Modificações Necessárias no Código](#modificações-necessárias-no-código)"
 #### **Cadastro e Obtenção do UUID**
 
-Após o cadastro na nossa página , é necessidade cadastras o Dispositivo e dessa forma será concedido um UUID.
+Após o cadastro na nossa página , é necessário cadastrar o Dispositivo e dessa forma será concedido um UUID.
 
 #### **Modificações Necessárias no código**
 
