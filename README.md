@@ -22,8 +22,6 @@ Este documento detalha o hardware utilizado e fornece informações para aqueles
 Este hardware foi desenvolvido para facilitar a coleta e transmissão de dados de sensores através do protocolo MQTT. Ele consiste em um ESP32 como microcontrolador, sensores diversos e um regulador de tensão para estabilização da alimentação dos componentes.
 
 
-**O hardware deve permanecer ligado continuamente para garantir a transmissão de dados.**
-
 
 ### **Lista de componentes e custos do projeto**
 
@@ -64,6 +62,9 @@ Este hardware foi desenvolvido para facilitar a coleta e transmissão de dados d
 
 ### **Esquemático Elétrico**
 Aqui temos o esquemático para auxiliar a montagem de um circuito caso haja interesse de usar este modelo.
+
+O hardware deve permanecer ligado para garantir que os sensores estejam funcionando e calibrados corretamente, além da garatia da comunicação do dispositivo com o servidor.
+
 ![Esquemático Elétrico](imagens/esquema_eletrico.png)
 
 
@@ -75,7 +76,7 @@ O código do cliente pode ser acessado pelo repositório: [GitHub - pji20242/har
 Dessa maneira iremos explicar alguns passos necessários em "[Cadastro e Obtenção do UUID](#cadastro-e-obtenção-do-uuid) "e " [Modificações Necessárias no Código](#modificações-necessárias-no-código)"
 #### **Cadastro e Obtenção do UUID**
 
-_**Necessário Discutir como é feita o cadastro de um aparelho externo**_
+Após o cadastro na nossa página , é necessidade cadastras o Dispositivo e dessa forma será concedido um UUID.
 
 #### **Modificações Necessárias no código**
 
