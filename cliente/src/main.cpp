@@ -18,20 +18,10 @@
 // #define PASSWORD "sua_senha"
 
 // Definitions for WiFi
-#define SSID "Frederico"
-#define PASSWORD "Mari#2606"
-//#define SSID "poco"
-//#define PASSWORD "deivid12"
-
-// Definitions for Sensors MQ2 and MQ7
-#define Board ("ESP-32") //
-#define PINO_MQ2 23    // GPIO 23 para o sensor MQ2
-#define PINO_MQ7 26    // GPIO 26 para o sensor MQ7
-/***********************Software Related Macros************************************/
-//#define         Type                    ("MQ-2") //MQ2
-#define Voltage_Resolution (5)
-#define ADC_Bit_Resolution (10) // For arduino UNO/MEGA/NANO
-#define RatioMQ2CleanAir (9.83) //RS / R0 = 9.83 ppm 
+//#define SSID "Frederico"
+//#define PASSWORD "Mari#2606"
+#define SSID "poco"
+#define PASSWORD "deivid12"
 
 // Definitions for MQTT
 #define MQTT_BROKER "vm0.pji3.sj.ifsc.edu.br"
@@ -51,6 +41,140 @@ BMP280Sensor bmp280;
 Luminosidade luminosidade(35, 3.3);
 OneWire oneWire(ONE_WIRE_BUS);
 DS18B20 temp_ds18b20(&oneWire);
+
+/************************mq2sensor************************************/
+/************************Hardware Related Macros************************************/
+#define         MQ2PIN                       (36)     //define which analog input channel you are going to use
+#define         RL_VALUE_MQ2                 (1)     //define the load resistance on the board, in kilo ohms
+#define         RO_CLEAN_AIR_FACTOR_MQ2      (9.577)  //RO_CLEAR_AIR_FACTOR=(Sensor resistance in clean air)/RO,
+               //which is derived from the chart in datasheet
+
+/************************MQ7sensor************************************/
+/************************Hardware Related Macros************************************/
+#define         MQ7PIN                       (39)      //define which analog input channel you are going to use
+#define         RL_VALUE_MQ7                 (1)      //define the load resistance on the board, in kilo ohms
+#define         RO_CLEAN_AIR_FACTOR_MQ7      (26.09)  //RO_CLEAR_AIR_FACTOR=(Sensor resistance in clean air)/RO,
+              //which is derived from the chart in datasheet
+
+/***********************Software Related Macros************************************/
+#define         CALIBARAION_SAMPLE_TIMES     (50)    //define how many samples you are going to take in the calibration phase
+#define         CALIBRATION_SAMPLE_INTERVAL  (500)   //define the time interal(in milisecond) between each samples in the
+               //cablibration phase
+#define         READ_SAMPLE_INTERVAL         (50)    //define how many samples you are going to take in normal operation
+#define         READ_SAMPLE_TIMES            (5)     //define the time interal(in milisecond) between each samples in 
+               //normal operation
+
+/**********************Application Related Macros**********************************/
+#define         GAS_HYDROGEN                  (0)
+#define         GAS_LPG                       (1)
+#define         GAS_METHANE                   (2)
+#define         GAS_CARBON_MONOXIDE           (3)
+#define         GAS_ALCOHOL                   (4)
+#define         GAS_SMOKE                     (5)
+#define         GAS_PROPANE                   (6)
+#define         accuracy                      (0)   //for linearcurves
+
+/*****************************Globals************************************************/
+float           RoMQ2 = 0;                            //Ro is initialized to 10 kilo ohms
+float           RoMQ7 = 0;                            //Ro is initialized to 10 kilo ohms
+
+struct leituras_t
+{
+  int MQ_2;  //300-10000
+  int MQ_7; //10-10000
+};
+
+leituras_t leitura;
+
+float MQResistanceCalculation(int raw_adc, int mq_pin)
+{
+  if (mq_pin == 1){
+  return ( ((float)RL_VALUE_MQ2*(1023-raw_adc)/raw_adc));
+  }
+  else if (mq_pin == 2){
+  return ( ((float)RL_VALUE_MQ7*(1023-raw_adc)/raw_adc));
+  }  
+}
+
+
+float MQCalibration(int mq_pin)
+{
+  int i;
+  float RS_AIR_val=0,r0;
+
+  for (i=0;i<CALIBARAION_SAMPLE_TIMES;i++) {                     //take multiple samples
+  RS_AIR_val += MQResistanceCalculation(analogRead(mq_pin), mq_pin);
+  delay(CALIBRATION_SAMPLE_INTERVAL);
+  }
+  RS_AIR_val = RS_AIR_val/CALIBARAION_SAMPLE_TIMES;              //calculate the average value
+
+  if (mq_pin == 1){
+  r0 = RS_AIR_val/RO_CLEAN_AIR_FACTOR_MQ2;                      //RS_AIR_val divided by RO_CLEAN_AIR_FACTOR yields the Ro 
+                 //according to the chart in the datasheet 
+  }
+  else if (mq_pin == 2){
+  r0 = RS_AIR_val/RO_CLEAN_AIR_FACTOR_MQ7;                      //RS_AIR_val divided by RO_CLEAN_AIR_FACTOR yields the Ro 
+                 //according to the chart in the datasheet 
+  }   
+  
+  return r0; 
+}
+
+float MQRead(int mq_pin)
+{
+  int i;
+  float rs=0;
+
+  for (i=0;i<READ_SAMPLE_TIMES;i++) {
+  rs += MQResistanceCalculation(analogRead(mq_pin),mq_pin);
+  delay(READ_SAMPLE_INTERVAL);
+  }
+
+  rs = rs/READ_SAMPLE_TIMES;
+
+  return rs;  
+}
+
+int MQ2GetGasPercentage(float rs_ro_ratio, int gas_id)
+{ 
+  if ( accuracy == 0 ) {
+  if ( gas_id == GAS_HYDROGEN ) {
+  return (pow(10,((-2.109*(log10(rs_ro_ratio))) + 2.983)));
+  } else if ( gas_id == GAS_LPG ) {
+  return (pow(10,((-2.123*(log10(rs_ro_ratio))) + 2.758)));
+  } else if ( gas_id == GAS_METHANE ) {
+  return (pow(10,((-2.622*(log10(rs_ro_ratio))) + 3.635)));
+  } else if ( gas_id == GAS_CARBON_MONOXIDE ) {
+  return (pow(10,((-2.955*(log10(rs_ro_ratio))) + 4.457)));
+  } else if ( gas_id == GAS_ALCOHOL ) {
+  return (pow(10,((-2.692*(log10(rs_ro_ratio))) + 3.545)));
+  } else if ( gas_id == GAS_SMOKE ) {
+  return (pow(10,((-2.331*(log10(rs_ro_ratio))) + 3.596)));
+  } else if ( gas_id == GAS_PROPANE ) {
+  return (pow(10,((-2.174*(log10(rs_ro_ratio))) + 2.799)));
+  }    
+  }
+} 
+
+int MQ7GetGasPercentage(float rs_ro_ratio, int gas_id)
+{ 
+  if ( accuracy == 0 ) {
+  if ( gas_id == GAS_CARBON_MONOXIDE ) {
+  return (pow(10,((-1.525*(log10(rs_ro_ratio))) + 1.994)));
+  } else if ( gas_id == GAS_HYDROGEN ) {
+  return (pow(10,((-1.355*(log10(rs_ro_ratio))) + 1.847)));
+  } else if ( gas_id == GAS_LPG ) {
+  return (pow(10,((-7.622*(log10(rs_ro_ratio))) + 8.919 )));
+  } else if ( gas_id == GAS_METHANE ) {
+  return (pow(10,((-11.01*(log10(rs_ro_ratio))) + 14.32)));
+  } else if ( gas_id == GAS_ALCOHOL ) {
+  return (pow(10,((-14.72*(log10(rs_ro_ratio))) + 19.31)));
+  }   
+  } 
+}
+
+
+
 
 void setup()
 {
@@ -84,6 +208,25 @@ void setup()
     }else{
         Serial.println("Falha ao conectar ao broker MQTT!");
     }
+
+    //-----------MQs------------------------
+    Serial.print("MQ2: Calibrating...\n");                
+    RoMQ2 = MQCalibration(MQ2PIN);                       //Calibrating the sensor. Please make sure the sensor is in clean air 
+                //when you perform the calibration                    
+    Serial.print("MQ2: Calibration is done...\n"); 
+    
+    Serial.print("MQ7: Calibrating...\n");                
+    RoMQ7 = MQCalibration(MQ7PIN);                       //Calibrating the sensor. Please make sure the sensor is in clean air 
+                //when you perform the calibration                    
+    Serial.print("MQ7: Calibration is done...\n"); 
+    Serial.print("RoMQ2=");
+    Serial.print(RoMQ2);
+    Serial.print("kohm");
+    Serial.print("\n");
+    Serial.print("RoMQ7=");
+    Serial.print(RoMQ7);
+    Serial.print("kohm");
+    Serial.print("\n");
 }
 
 void loop()
@@ -147,6 +290,17 @@ void loop()
 
         payload += create_payload(LUMINOSIDADE, luminosidade.calculatePercentage());
     }
+
+    leitura.MQ_2 = MQ2GetGasPercentage(MQRead(MQ2PIN)/RoMQ2,GAS_SMOKE);
+    payload += create_payload(FUMACA, leitura.MQ_2);
+    leitura.MQ_7 = MQ7GetGasPercentage(MQRead(MQ7PIN)/RoMQ7,GAS_CARBON_MONOXIDE);
+    payload += create_payload(MONO_CARBONO, leitura.MQ_7);
+    Serial.print("Smoke Value = ");
+    Serial.println(leitura.MQ_2);
+    Serial.print("CO Value = "); 
+    Serial.println(leitura.MQ_7); 
+
+
     // Publish the payload
 
     mqtt.setCallback(callback);
